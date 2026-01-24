@@ -1,0 +1,80 @@
+name: bastoopshop
+description: "Multi-vendor E-commerce Platform"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  lucide_icons: ^0.257.0
+
+  #image load from sever
+  cached_network_image: ^3.3.0
+
+  #drower package
+  flutter_zoom_drawer: ^3.2.0
+
+  # 🔥 Firebase
+  firebase_core: ^3.4.0
+  firebase_auth: ^5.7.0
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.2
+  firebase_messaging: ^15.1.0
+
+  # 📁 File & Image
+  file_picker: ^10.3.3
+  image_picker: ^0.8.7+6
+  flutter_image_compress: ^2.4.0
+  photo_view: ^0.15.0
+  open_file: ^3.2.1
+
+  # 🧰 Utilities
+  path: ^1.8.3
+  path_provider: ^2.0.15
+  intl: ^0.19.0
+  http: ^1.1.0
+  flutter_secure_storage: ^8.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.4.1
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/bastobshop_logo.png"
+  adaptive_icon_background: "#FFFFFF" #  ব্যাকগ্রাউন্ড কালার
+  adaptive_icon_foreground: "assets/bastobshop_logo.png" # ট্রান্সপারেন্ট লোগো
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/bastobshop_logo.png
+  android: true
+  ios: true
+  fullscreen: true
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: assets/bastobshop_logo.png
+
+
+
+
+flutter:
+  assets:
+    - assets/bastobshop_logo.png
+
+  uses-material-design: true
+
+
