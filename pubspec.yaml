@@ -14,6 +14,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   lucide_icons: ^0.257.0
 
+  #add State Management Library for data passing
+  provider: ^6.1.1
   #image load from sever
   cached_network_image: ^3.3.0
 

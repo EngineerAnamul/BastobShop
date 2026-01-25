@@ -1,347 +1,519 @@
-import 'dart:ui';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../api/api_service.dart';
+import 'package:provider/provider.dart'; // প্রোভাইডার ইমপোর্ট
 import '../app_color.dart';
-import '../cart/cart_controller.dart';
-import '../cart/cart_screen.dart';
-import '../main_wrapper.dart';
+import '../cart/cart_controller.dart'; // আপনার CartProvider ক্লাস
 import '../models/product_model.dart';
 import '../service/ui_helper.dart';
 
-class HomeScreen extends StatefulWidget {
+class CartScreen extends StatelessWidget { // StatefulWidget এর আর দরকার নেই
   final VoidCallback onMenuTap;
   final VoidCallback onClose;
   final bool isDrawerOpen;
-  final VoidCallback onCartTap;
 
-  const HomeScreen({
+  const CartScreen({
     super.key,
     required this.onMenuTap,
-    required this.isDrawerOpen,
     required this.onClose,
-    required this.onCartTap,
+    required this.isDrawerOpen
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  // 🔹 ভেরিয়েবলটি
-  bool _isUserScrolling = false;
-  final ScrollController _scrollController = ScrollController();
-  List<Product> _allProducts = [];
-  int _currentPage = 1;
-  bool _isLoading = false;
-  bool _hasMore = true;
-
-  final ScrollController _mainScrollController = ScrollController();
-  final ScrollController _categoryScrollController = ScrollController();
-  final List<Map<String, dynamic>> categories = [
-    {"icon": Icons.phone_android, "name": "Electronics"},
-    {"icon": Icons.checkroom, "name": "Fashion"},
-    {"icon": Icons.chair, "name": "Furniture"},
-    {"icon": Icons.fastfood, "name": "Grocery"},
-    {"icon": Icons.watch, "name": "Accessories"},
-    {"icon": Icons.sports_esports, "name": "Gaming"},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMoreProducts(); // শুরুতে ডাটা লোড
-
-    _mainScrollController.addListener(() {
-      // যদি স্ক্রল একদম নিচে চলে আসে (৯০% এর বেশি), তবে নতুন পেজ লোড হবে
-      if (_mainScrollController.position.pixels >=
-          _mainScrollController.position.maxScrollExtent * 0.9) {
-        _loadMoreProducts();
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
-  }
-
-  Future<void> _loadMoreProducts() async {
-    if (_isLoading || !_hasMore) return;
-    setState(() => _isLoading = true);
-
-    try {
-      // ApiService এ পেজ নম্বর পাঠিয়ে ডাটা আনা
-      final newProducts = await ApiService().fetchProducts(_currentPage);
-
-      setState(() {
-        _isLoading = false;
-        if (newProducts.isEmpty) {
-          _hasMore = false; // আর কোনো ডাটা নেই
-        } else {
-          _allProducts.addAll(
-            newProducts,
-          ); // আগের লিস্টের সাথে নতুনগুলো যোগ করা
-          _currentPage++; // পরের পেজের জন্য রেডি
-        }
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _startAutoScroll() {
-    Future.delayed(const Duration(milliseconds: 30), () {
-      if (_scrollController.hasClients && !_isUserScrolling) {
-        // 🔹 চেক করবে ইউজার হাত দিয়েছে কি না
-        double currentScroll = _scrollController.offset;
-        _scrollController.jumpTo(currentScroll + 1);
-
-        if (currentScroll >= _scrollController.position.maxScrollExtent) {
-          _scrollController.jumpTo(0);
-        }
-      }
-      _startAutoScroll(); // লুপ চলতে থাকবে
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose(); // মেমোরি খালি করার জন্য জরুরি
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // প্রোভাইডার লিসেনার
+    final cart = Provider.of<CartProvider>(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      extendBody: true,
+      backgroundColor: Colors.grey[50],
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(90), // একটু বাড়িয়ে লাক্সারি ফিল দেওয়া
+        preferredSize: const Size.fromHeight(85),
         child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: ClipRRect( // ব্লার ইফেক্ট বাউন্ডারি ঠিক রাখার জন্য
+          margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(25),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // ২০২৬-এর গ্লাস লুক
-              child: Container(
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20)],
+          ),
+          child: SafeArea(
+            child: AppBar(
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              centerTitle: true,
+              leading: _buildLeadingIcon(
+                isDrawerOpen: isDrawerOpen,
+                onClose: onClose,
+                onMenuTap: onMenuTap,
+              ),
+              title: _buildLogoTitle(),
+              actions: [
+                _buildActionIcon(Icons.search_rounded, () {}),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+/*      body: cart.items.isEmpty
+          ? _buildEmptyCart()
+          : Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(15),
+              itemCount: cart.items.length,
+              itemBuilder: (context, index) {
+                final product = cart.items[index];
+                return _buildCartItem(context, product, cart);
+              },
+            ),
+          ),
+          _buildPriceSummary(cart),
+        ],
+      ),*/
+
+      // ১. কন্টেন্টকে মাঝখানে রাখার জন্য Center ব্যবহার
+      body: cart.items.isEmpty
+          ? _buildEmptyCart()
+          : Center(
+        child: ConstrainedBox(
+          // ২. এখানে আমরা স্ক্রিনের সর্বোচ্চ চওড়া ৮০০ পিক্সেল সেট করে দিচ্ছি
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(15),
+                  itemCount: cart.items.length,
+                  itemBuilder: (context, index) {
+                    final product = cart.items[index];
+                    return _buildCartItem(context, product, cart);
+                  },
+                ),
+              ),
+              _buildPriceSummary(cart),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ২. কার্ট আইটেম কার্ড (Provider logic সহ)
+/*
+  Widget _buildCartItem(BuildContext context, Product product, CartProvider cart) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(product.imageUrl, width: 80, height: 80, fit: BoxFit.cover),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 5),
+                Text("৳ ${product.price}", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () => cart.removeItem(product), // Provider মেথড
+          ),
+        ],
+      ),
+    );
+  }
+*/
+
+
+
+  Widget _buildCartItem(BuildContext context, Product product, CartProvider cart) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20), // আরও রাউন্ডেড
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _showProductDetails(context, product),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // ১. ইমেজ সেকশন (Soft Background সহ)
+              Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85), // স্বচ্ছ সাদা
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.white.withOpacity(0.5)), // হালকা বর্ডার
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.network(
+                    product.imageUrl,
+                    width: 90,
+                    height: 90,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // ২. কন্টেন্ট সেকশন
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            product.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        // ডিলিট বাটনটি এখন ছোট এবং ক্লিন
+                        GestureDetector(
+                          onTap: () => cart.removeItem(product),
+                          child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 20),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Premium Quality", // অথবা সাব-ক্যাটেগরি
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ৩. প্রাইস এবং কাউন্টার (নিচের অংশ)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "৳${product.price}",
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                          ),
+                        ),
+
+                        // প্রফেশনাল কাউন্টার বাটন
+/*                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              _buildCounterButton(Icons.remove, () {
+                                // cart.decrementQuantity(product); // আপনার প্রোভাইডারে যোগ করতে হবে
+                              }),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  "1", // এখানে cart.itemQuantity হবে
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              _buildCounterButton(Icons.add, () {
+                                // cart.incrementQuantity(product); // আপনার প্রোভাইডারে যোগ করতে হবে
+                              }, isPrimary: true),
+                            ],
+                          ),
+                        ),*/
+
+                        // প্রফেশনাল কাউন্টার বাটন (এনিমেশন সহ)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Row(
+                            children: [
+                              _buildCounterButton(Icons.remove, () {
+                                cart.decrementQuantity(product);
+                              }),
+
+                              // এনিমেটেড সংখ্যা
+                              SizedBox(
+                                width: 30,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  transitionBuilder: (Widget child, Animation<double> animation) {
+                                    return ScaleTransition(scale: animation, child: child);
+                                  },
+                                  child: Text(
+                                    '${product.quantity}',
+                                    key: ValueKey<int>(product.quantity), // Key জরুরি এনিমেশনের জন্য
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              _buildCounterButton(Icons.add, () {
+                                cart.incrementQuantity(product);
+                              }, isPrimary: true),
+                            ],
+                          ),
+                        ),
+
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+// কাউন্টার বাটনের হেল্পার মেথড
+  Widget _buildCounterButton(IconData icon, VoidCallback onTap, {bool isPrimary = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: isPrimary ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: isPrimary ? Colors.white : Colors.black87,
+        ),
+      ),
+    );
+  }
+
+/*
+  Widget _buildPriceSummary(CartProvider cart) {
+    double deliveryCharge = 50.0;
+    return Container(
+      padding: const EdgeInsets.all(25),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+      ),
+      child: Column(
+        children: [
+
+          _priceRow("Subtotal", "৳ ${cart.totalAmount}"),
+          _priceRow("Delivery Charge", "৳ $deliveryCharge"),
+          const Divider(height: 30),
+          _priceRow("Total", "৳ ${cart.totalAmount + deliveryCharge}", isTotal: true),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              minimumSize: const Size(double.infinity, 55),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            ),
+            onPressed: () {},
+            child: const Text("Buy Now", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+*/
+
+
+  Widget _buildPriceSummary(CartProvider cart) {
+    double deliveryCharge = 50.0;
+    double total = cart.totalAmount + deliveryCharge;
+
+    return Container(
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(35)), // আরও মডার্ন কার্ভ
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 30,
+            offset: const Offset(0, -10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // কুপন কোড সেকশন (বড় কোম্পানিতে এটি থাকেই)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.local_offer_outlined, color: AppColors.primary, size: 20),
+                const SizedBox(width: 10),
+                const Text("Apply Promo Code", style: TextStyle(fontWeight: FontWeight.w500)),
+                const Spacer(),
+                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
+
+          // প্রাইজ ডিটেইলস
+          _priceRow("Subtotal", "৳ ${cart.totalAmount}"),
+          _priceRow("Delivery Charge", "৳ $deliveryCharge"),
+
+          // ড্যাশড ডিভাইডার (এটি দেখতে খুব স্মার্ট লাগে)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            child: Row(
+              children: List.generate(30, (index) => Expanded(
+                child: Container(
+                  color: index % 2 == 0 ? Colors.transparent : Colors.grey[200],
+                  height: 1.5,
+                ),
+              )),
+            ),
+          ),
+
+          // গ্র্যান্ড টোটাল
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Total Amount", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 300),
+                style: TextStyle(
+                  fontSize: 24,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+                child: Text("৳ $total"),
+              ),
+            ],
+          ),
+          const SizedBox(height: 25),
+
+          // প্রিমিয়াম চেকআউট বাটন
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                // এখানে আপনার চেকআউট লজিক বসবে
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: AppColors.primary.withOpacity(0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                child: SafeArea(
-
-                  child: AppBar(
-                    elevation: 0,
-                    backgroundColor: Colors.transparent, // মাস্ট ট্রান্সপারেন্ট
-                    centerTitle: true,
-                    leadingWidth: 60, // আইকনের জন্য পর্যাপ্ত জায়গা
-                    leading: _buildLeadingIcon(
-                      isDrawerOpen: widget.isDrawerOpen,
-                      onClose: widget.onClose,
-                      onMenuTap: widget.onMenuTap,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Proceed to Checkout",
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    title: _buildLogoTitle(),
-                    actions: [
-                      _buildActionIcon(Icons.search_rounded, () {}),
-                      _buildCartIconButton(widget.onCartTap),
-                      const SizedBox(width: 10),
-                    ],
-                  ),
+                    SizedBox(width: 10),
+                    Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                  ],
                 ),
               ),
             ),
           ),
-        ),
+          // নিচের সেফ এরিয়া স্পেস
+          const SizedBox(height: 10),
+        ],
       ),
-      body: CustomScrollView(
-        controller: _mainScrollController,
-        slivers: [
-          // ১. ব্যানার সেকশন
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.all(12),
-              height: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [Colors.blue, Colors.purple],
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  "Big Sale Up To 50%\nShop Now",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+    );
+  }
+
+/*  Widget _priceRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: isTotal ? Colors.black : Colors.grey, fontSize: isTotal ? 18 : 16, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
+          Text(value, style: TextStyle(fontSize: isTotal ? 22 : 16, color: isTotal ? AppColors.primary : Colors.black, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }*/
+
+  Widget _priceRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: isTotal ? Colors.black : Colors.grey[600], fontSize: isTotal ? 18 : 14)),
+
+          // এনিমেটেড প্রাইজ
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 300),
+            style: TextStyle(
+              fontSize: isTotal ? 22 : 16,
+              color: isTotal ? AppColors.primary : Colors.black,
+              fontWeight: FontWeight.bold,
             ),
+            child: Text(value),
           ),
+        ],
+      ),
+    );
+  }
 
-          // ২. ক্যাটাগরি টাইটেল
-          SliverToBoxAdapter(child: sectionTitle("Categories")),
-
-          // ৩. ক্যাটাগরি লিস্ট (অটো স্ক্রল সহ)
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 120,
-              child: Listener(
-                onPointerDown: (_) {
-                  setState(() {
-                    _isUserScrolling = true;
-                  });
-                },
-                onPointerUp: (_) {
-                  Future.delayed(const Duration(seconds: 2), () {
-                    if (mounted) {
-                      setState(() {
-                        _isUserScrolling = false;
-                      });
-                    }
-                  });
-                },
-                child: ListView.builder(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 10000,
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final category = categories[index % categories.length];
-                    return categoryItem(
-                      category["icon"] as IconData,
-                      category["name"] as String,
-                      () => print("${category["name"]} clicked"),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-
-          // ৪. প্রোডাক্ট টাইটেল
-          SliverToBoxAdapter(child: sectionTitle("Featured Products")),
-
-          // ৫. ডাইনামিক প্রোডাক্ট গ্রিড
-          SliverPadding(
-            padding: const EdgeInsets.all(12),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              delegate: SliverChildBuilderDelegate((context, index) {
-                return productCard(_allProducts[index]);
-              }, childCount: _allProducts.length),
-            ),
-          ),
-
-          // ৬. লোডিং ইন্ডিকেটর
-          if (_isLoading)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ),
-
-          // ৭. ফ্ল্যাশ সেল, ভেন্ডর এবং ফুটার সেকশন
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                sectionTitle("Flash Sale"),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Limited Time Offer",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                      Text(
-                        "02:15:30",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                sectionTitle("Top Vendors"),
-                SizedBox(
-                  height: 80,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      vendorCard("Vendor A"),
-                      vendorCard("Vendor B"),
-                      vendorCard("Vendor C"),
-                    ],
-                  ),
-                ),
-                sectionTitle("Why Choose Us"),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: Icon(Icons.lock, color: Colors.green),
-                        title: Text("Secure Payment"),
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.local_shipping, color: Colors.blue),
-                        title: Text("Fast Delivery"),
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.refresh, color: Colors.orange),
-                        title: Text("Easy Return"),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  color: AppColors.primary,
-                  child: const Column(
-                    children: [
-                      Text(
-                        "© 2026 AIH Company",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "Secure | Trusted | Fast",
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+  Widget _buildEmptyCart() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shopping_basket_outlined, size: 100, color: Colors.grey[300]),
+          const SizedBox(height: 20),
+          const Text("Your cart is empty!", style: TextStyle(fontSize: 18, color: Colors.grey)),
         ],
       ),
     );
@@ -605,6 +777,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+
             // ৭. বটম অ্যাকশন বার (Buy Now & Add to Cart)
             Container(
               padding: const EdgeInsets.all(20),
@@ -634,7 +807,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 12),
 
                   // কার্ট বাটন
-                  Expanded(
+/*                  Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
@@ -644,6 +817,41 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
+                      */
+                  /*                      onPressed: () {
+                        //  কার্টে অ্যাড
+                        addToCart(
+                          product,
+                          onUpdate: () {
+                            // এটি হোম স্ক্রিনকে রিফ্রেশ করবে
+                            setState(() {});
+                          },
+                        );
+                        //  পপ-আপ বন্ধ করুন
+                        Navigator.pop(context);
+
+                        // আগের সব স্নাকবার আগে ক্লিয়ার করুন
+                        ScaffoldMessenger.of(context).clearSnackBars();
+
+                        //  স্নাকবারটি
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("${product.name} added to cart!"),
+                            backgroundColor: Colors.green,
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 3), // ৩ সেকেন্ড
+                          ),
+                        );
+
+                        // ৩. একটি ফোর্স টাইমার  (অ্যান্ড্রয়েডের জন্য)
+                        Future.delayed(const Duration(seconds: 3), () {
+                          if (mounted) {
+                            // চেক করে নেওয়া হচ্ছে ইউজার ওই স্ক্রিনে আছে কি না
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          }
+                        });
+                      },*/
+                  /*
                       onPressed: () {
                         // প্রোভাইডার কল করা
                         Provider.of<CartProvider>(
@@ -659,15 +867,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
 
 
-                      child: const Text(
+*/
+/*                      child: const Text(
                         "Add to Cart",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
-                      ),
+                      ),*//*
                     ),
-                  ),
+                  ),*/
                   const SizedBox(width: 12),
                   // বাই নাও বাটন
                   Expanded(
@@ -685,91 +894,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-
                         ),
                       ),
                     ),
                   ),
                 ],
-
-
-              ),
-
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget productCard(Product product) {
-    return GestureDetector(
-      onTap: () => _showProductDetails(context, product),
-      // 👈 ক্লিক করলে ডিটেইলস দেখাবে
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                  child: Image.network(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.broken_image,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "৳ ${product.price}",
-                    style: const TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],
@@ -777,8 +906,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
 }
-
 void _showSellerFullProfile(BuildContext context, Product product) {
   showModalBottomSheet(
     context: context,
@@ -787,7 +916,7 @@ void _showSellerFullProfile(BuildContext context, Product product) {
     backgroundColor: Colors.transparent,
     builder: (context) => Container(
       height:
-          MediaQuery.of(context).size.height *
+      MediaQuery.of(context).size.height *
           0.80, // উচ্চতা একটু বাড়িয়ে ৮০% করলাম
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -856,7 +985,7 @@ void _showSellerFullProfile(BuildContext context, Product product) {
                   const SizedBox(height: 10),
                   const Text(
                     "This store provides authentic gadgets and electronic items with official warranty. Customer satisfaction is our priority. "
-                    "We have been serving quality products for over 5 years in the local market.",
+                        "We have been serving quality products for over 5 years in the local market.",
                     style: TextStyle(color: Colors.grey, height: 1.5),
                   ),
 
@@ -917,78 +1046,6 @@ void _showSellerFullProfile(BuildContext context, Product product) {
     ),
   );
 }
-
-Widget sectionTitle(String title) {
-  return Padding(
-    padding: const EdgeInsets.all(12),
-    child: Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    ),
-  );
-}
-
-Widget categoryItem(IconData icon, String name, VoidCallback onTap) {
-  return InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(20),
-    child: Container(
-      width: 100,
-      // 🔹 চারদিকে মার্জিন দিলে আইটেমগুলো আর মিশে থাকবে না এবং শ্যাডো দেখা যাবে
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        // 🔹 ভাসমান শ্যাডো ইফেক্ট
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 28, color: Colors.blue),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget vendorCard(String name) {
-  return Container(
-    width: 120,
-    margin: const EdgeInsets.symmetric(horizontal: 8),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Center(
-      child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-    ),
-  );
-}
-
 Widget _sellerStat(String value, String label) {
   return Column(
     children: [
@@ -1015,73 +1072,6 @@ Widget _trustIcon(IconData icon, String text) {
   );
 }
 
-Widget _buildActionIcon(IconData icon, VoidCallback onTap) {
-  return IconButton(
-    icon: Icon(icon, color: AppColors.textDark, size: 26),
-    onPressed: onTap,
-    splashRadius: 25,
-  );
-}
-
-
-
-Widget _buildCartIconButton(VoidCallback onCartTap) {
-  return Consumer<CartProvider>(
-    builder: (context, cart, child) {
-      return GestureDetector(
-        onTap: onCartTap, // পুরো এরিয়াতে ক্লিক কাজ করবে
-        child: Container(
-          width: 50, // ক্লিক এরিয়া বড় করা হলো
-          alignment: Alignment.center,
-          child: Stack(
-            clipBehavior: Clip.none, // ব্যাজটি আইকনের বাইরে গেলেও দেখা যাবে
-            children: [
-              const Icon(
-                Icons.shopping_bag_outlined,
-                color: Colors.black87,
-                size: 28,
-              ),
-              if (cart.itemCount > 0)
-                Positioned(
-                  right: -4,
-                  top: -4,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2), // প্রিমিয়াম লুক
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                        )
-                      ],
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${cart.itemCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
 Widget _buildLeadingIcon({
   required bool isDrawerOpen,
   required VoidCallback onClose,
@@ -1103,12 +1093,11 @@ Widget _buildLeadingIcon({
     onPressed: isDrawerOpen ? onClose : onMenuTap,
   );
 }
-
 Widget _buildLogoTitle() {
   return ShaderMask(
     shaderCallback: (bounds) => AppColors.logoShader(bounds),
     child: const Text(
-      "BastobShop",
+      "My Shopping Cart",
       style: TextStyle(
         fontSize: 22,
         letterSpacing: 1.1,
@@ -1116,6 +1105,14 @@ Widget _buildLogoTitle() {
         color: Colors.white,
       ),
     ),
+  );
+}
+
+Widget _buildActionIcon(IconData icon, VoidCallback onTap) {
+  return IconButton(
+    icon: Icon(icon, color: AppColors.textDark, size: 26),
+    onPressed: onTap,
+    splashRadius: 25,
   );
 }
 
