@@ -24,16 +24,29 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
   double mouseX = 0;
   double mouseY = 0;
 
+
   @override
   void initState() {
     super.initState();
-    // এটি নিচের নেভিগেশন বার এবং উপরের স্ট্যাটাস বার হাইড করবে (Immersive Mode)
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    // শুধুমাত্র নিচের সিস্টেম নেভিগেশন বার হাইড করার জন্য
-    SystemChrome.setEnabledSystemUIMode(
+    // ১. শুধুমাত্র ওপরের স্ট্যাটাস বার দেখানোর কমান্ড
+ /*   SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
-      overlays: [SystemUiOverlay.top], // শুধু টপ বার বা স্ট্যাটাস বার দেখাবে
+      overlays: [SystemUiOverlay.top], // এটি নিশ্চিত করে যে টপ বার থাকবে
     );
+
+    // ২. স্ট্যাটাস বারের আইকন এবং কালার ফিক্স করা (ডার্ক মোডের জন্য)
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light, // আইকনগুলো সাদা দেখাবে
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );*/
+
+    _hideBottomBar();
+
+
 
 
     _animationController = AnimationController(
@@ -47,6 +60,64 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
+  void _hideBottomBar() {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.top], // শুধু টপ বার রাখবে
+    );
+
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+  }
+  /*  @override
+  void initState() {
+    super.initState();
+    // // এটি নিচের নেভিগেশন বার এবং উপরের স্ট্যাটাস বার হাইড করবে (Immersive Mode)
+    // // SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // // শুধুমাত্র নিচের সিস্টেম নেভিগেশন বার হাইড করার জন্য
+    // SystemChrome.setEnabledSystemUIMode(
+    //   SystemUiMode.manual,
+    //   overlays: [SystemUiOverlay.top], // শুধু টপ বার বা স্ট্যাটাস বার দেখাবে
+    // );
+
+
+    // ১. ইমার্সিভ স্টিকি মোড সেট করুন (এটিই সবচাইতে শক্তিশালী সমাধান)
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky, // এটি বারটিকে অটো-হাইড করবে
+    );
+
+    // ২. ওপরের বারটি যেন ডার্ক ব্যাকগ্রাউন্ডে দেখা যায়
+    // SystemChrome.setSystemUIOverlayStyle(
+    //   const SystemUiOverlayStyle(
+    //     statusBarColor: Colors.transparent,
+    //     statusBarIconBrightness: Brightness.light,
+    //     systemNavigationBarColor: Colors.transparent, // বার আসলেও যেন ট্রান্সপারেন্ট থাকে
+    //   ),
+    // );
+
+    // শুধুমাত্র নিচের সিস্টেম নেভিগেশন বার হাইড করার জন্য
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+    );
+    //   overlays: [SystemUiOverlay.top], // শুধু টপ বার বা স্ট্যাটাস বার দেখাবে
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.7).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _slideAnimation = Tween<double>(begin: 0.0, end: 220.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }*/
 
   @override
   void dispose() {
@@ -59,6 +130,16 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
       isDrawerOpen ? _animationController.reverse() : _animationController.forward();
       isDrawerOpen = !isDrawerOpen;
     });
+
+    // ড্রয়ার ওপেন বা ক্লোজ হওয়ার সময় স্ট্যাটাস বারের কালার কন্ট্রোল
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        // ড্রয়ার খোলা থাকলেও আইকন সাদা (light) থাকবে
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark, // iOS এর জন্য জরুরি
+      ),
+    );
   }
   void _showExitDialog(BuildContext context) {
     showDialog(
@@ -85,6 +166,8 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
       canPop: false, // ডিফল্ট ব্যাক অ্যাকশন বন্ধ
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
+
+        _hideBottomBar();
 
         // লজিক ১: ড্রয়ার খোলা থাকলে বন্ধ করো
         if (isDrawerOpen) {
