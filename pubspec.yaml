@@ -13,15 +13,18 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   lucide_icons: ^0.257.0
-
+  # এটি Skeleton Effect এর জন্য
+  shimmer: ^3.0.0
   #add State Management Library for data passing
   provider: ^6.1.1
   #image load from sever
-  cached_network_image: ^3.3.0
+  cached_network_image: ^3.4.1
 
   #drower package
   flutter_zoom_drawer: ^3.2.0
 
+  #connectivity_plus
+  connectivity_plus: ^6.0.3
   # 🔥 Firebase
   firebase_core: ^3.4.0
   firebase_auth: ^5.7.0
@@ -42,6 +45,7 @@ dependencies:
   intl: ^0.19.0
   http: ^1.1.0
   flutter_secure_storage: ^8.1.0
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:

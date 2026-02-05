@@ -5,12 +5,12 @@ import '../cart/cart_controller.dart'; // আপনার CartProvider ক্ল
 import '../models/model.dart';
 import '../service/ui_helper.dart';
 
-class CartScreen extends StatelessWidget { // StatefulWidget এর আর দরকার নেই
+class SettingScreen extends StatelessWidget { // StatefulWidget এর আর দরকার নেই
   final VoidCallback onMenuTap;
   final VoidCallback onClose;
   final bool isDrawerOpen;
 
-  const CartScreen({
+  const SettingScreen({
     super.key,
     required this.onMenuTap,
     required this.onClose,
@@ -987,7 +987,7 @@ Widget _buildLogoTitle() {
   return ShaderMask(
     shaderCallback: (bounds) => AppColors.logoShader(bounds),
     child: const Text(
-      "My Shopping Cart",
+      "Settings",
       style: TextStyle(
         fontSize: 22,
         letterSpacing: 1.1,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/product_model.dart';
+import '../models/model.dart';
 
 class CartProvider extends ChangeNotifier {
   // ১. প্রাইভেট লিস্ট
@@ -71,7 +71,7 @@ class CartProvider extends ChangeNotifier {
 
 import 'dart:ui';
 
-import '../models/product_model.dart';
+import '../models/model.dart';
 
 List<CartItem> myCart = [];
 
