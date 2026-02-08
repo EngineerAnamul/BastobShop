@@ -11,8 +11,6 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
     // স্ক্রিনের উইডথ কত সেটা চেক করা হচ্ছে
     double screenWidth = MediaQuery.of(context).size.width;
 
@@ -21,7 +19,6 @@ class ProductCard extends StatelessWidget {
 
     // বড় স্ক্রিনে কার্ড খুব লম্বা যেন না হয় সেজন্য রেশিও অ্যাডজাস্ট করা
     double aspectRatio = screenWidth > 600 ? 0.85 : 0.72;
-
 
     return GestureDetector(
       onTap: () => ProductDetailsSheet.show(context, product),
@@ -56,14 +53,18 @@ class ProductCard extends StatelessWidget {
                     top: Radius.circular(12),
                   ),
                   child:
-
-                  // Image.network এর বদলে এটি ব্যবহার করুন
-                  CachedNetworkImage(
-                    imageUrl: product.imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const CommonShimmer(width: double.infinity, height: double.infinity, borderRadius: 12),
-                    errorWidget: (context, url, error) => const Icon(Icons.broken_image),
-                  )
+                      // Image.network এর বদলে এটি ব্যবহার করুন
+                      CachedNetworkImage(
+                        imageUrl: product.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const CommonShimmer(
+                          width: double.infinity,
+                          height: double.infinity,
+                          borderRadius: 12,
+                        ),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.broken_image),
+                      ),
 
                   /*Image.network(
                     product.imageUrl,
@@ -86,7 +87,7 @@ class ProductCard extends StatelessWidget {
                         color: Colors.grey,
                       ),
                     ),
-                  )*/,
+                  )*/
                 ),
               ),
             ),

@@ -11,18 +11,7 @@ class CartProvider extends ChangeNotifier {
   // ৩. কার্টে আইটেম সংখ্যা
   int get itemCount => _items.length;
 
-  /*  // ৪. টোটাল প্রাইজ হিসাব
-  double get totalAmount {
-    double priceValue = double.tryParse(item.price.toString()) ?? 0.0;
-    return _items.fold(0.0, (sum, item) => sum + item.price);
-  }*/
-/*  double get totalAmount {
-    return _items.fold(0.0, (sum, item) {
-      // যদি price স্ট্রিং হয়, তবে সেটিকে double-এ রূপান্তর করছি
-      double priceValue = double.tryParse(item.price.toString()) ?? 0.0;
-      return sum + priceValue;
-    });
-  }*/
+
   double get totalAmount {
     return _items.fold(0.0, (sum, item) {
       // ১. String price কে double-এ রূপান্তর (যাতে এরর না আসে)

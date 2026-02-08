@@ -3,7 +3,6 @@ import 'package:provider/provider.dart'; // প্রোভাইডার ই�
 import '../app_color.dart';
 import '../cart/cart_controller.dart'; // আপনার CartProvider ক্লাস
 import '../models/model.dart';
-import '../service/ui_helper.dart';
 
 class ProfileScreen extends StatelessWidget { // StatefulWidget এর আর দরকার নেই
   final VoidCallback onMenuTap;

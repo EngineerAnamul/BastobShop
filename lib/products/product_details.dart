@@ -1,12 +1,8 @@
 import 'package:bastoopshop/products/seller_profile_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../api/api_service.dart';
-import '../app_color.dart';
-import '../cart/cart_controller.dart';
 import '../models/model.dart';
-import '../service/ui_helper.dart';
 import '../utils/common_shimmer.dart';
 
 class ProductDetailsSheet {

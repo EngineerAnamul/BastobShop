@@ -1,4 +1,5 @@
 import 'package:bastoopshop/orders/orders_screen.dart';
+import 'package:bastoopshop/products/search_screen.dart';
 import 'package:bastoopshop/profile/profile_screen.dart';
 import 'package:bastoopshop/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,8 @@ import 'cart/cart_screen.dart';
 import 'utils/custom_cursor.dart';
 import 'home/home_screen.dart';
 
-enum DrawerItems { home, profile, orders, settings, logout, cart }
+// ignore: constant_identifier_names
+enum DrawerItems { home, search, profile, orders, settings, logout, cart }
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
@@ -16,7 +18,8 @@ class MainWrapper extends StatefulWidget {
   State<MainWrapper> createState() => _MainWrapperState();
 }
 
-class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStateMixin {
+class _MainWrapperState extends State<MainWrapper>
+    with SingleTickerProviderStateMixin {
   // ১. এনিমেশন কন্ট্রোলার (Smooth Performance এর জন্য)
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -26,7 +29,6 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
   DrawerItems selectedItem = DrawerItems.home;
   double mouseX = 0;
   double mouseY = 0;
-
 
   @override
   void initState() {
@@ -44,6 +46,7 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
+
   void _hideBottomBar() {
     SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
@@ -64,18 +67,16 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
   void dispose() {
     _animationController.dispose();
     super.dispose();
-
-
-
   }
 
   void toggleDrawer() {
     setState(() {
-      isDrawerOpen ? _animationController.reverse() : _animationController.forward();
+      isDrawerOpen
+          ? _animationController.reverse()
+          : _animationController.forward();
       isDrawerOpen = !isDrawerOpen;
 
       _hideBottomBar();
-
 
       // ড্রয়ার ওপেন বা ক্লোজ হওয়ার সময় স্ট্যাটাস বারের কালার কন্ট্রোল
       SystemChrome.setSystemUIOverlayStyle(
@@ -87,9 +88,8 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
         ),
       );
     });
-
-
   }
+
   void _showExitDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -98,9 +98,13 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
         title: const Text("Exit App?"),
         content: const Text("Are you sure you want to close BastobShop?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("No")),
           TextButton(
-            onPressed: () => SystemNavigator.pop(), // অ্যাপ সরাসরি বন্ধ করার কমান্ড
+            onPressed: () => Navigator.pop(context),
+            child: const Text("No"),
+          ),
+          TextButton(
+            onPressed: () =>
+                SystemNavigator.pop(), // অ্যাপ সরাসরি বন্ধ করার কমান্ড
             child: const Text("Yes", style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -121,7 +125,6 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
         // লজিক ১: ড্রয়ার খোলা থাকলে বন্ধ করো
         if (isDrawerOpen) {
           toggleDrawer();
-
 
           // ড্রয়ার ওপেন বা ক্লোজ হওয়ার সময় স্ট্যাটাস বারের কালার কন্ট্রোল
           SystemChrome.setSystemUIOverlayStyle(
@@ -164,15 +167,19 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
             child: Stack(
               children: [
                 _buildDrawer(), // ড্রয়ার
-
                 // এনিমেটেড মেইন কন্টেন্ট
                 AnimatedBuilder(
                   animation: _animationController,
                   builder: (context, child) {
                     return Transform(
-                      transform: Matrix4.translationValues(_slideAnimation.value, _slideAnimation.value * 0.5, 0)
-                        ..scale(_scaleAnimation.value)
-                        ..rotateY(isDrawerOpen ? -0.3 : 0),
+                      transform:
+                          Matrix4.translationValues(
+                              _slideAnimation.value,
+                              _slideAnimation.value * 0.5,
+                              0,
+                            )
+                            ..scale(_scaleAnimation.value)
+                            ..rotateY(isDrawerOpen ? -0.3 : 0),
                       alignment: Alignment.center,
                       child: child,
                     );
@@ -184,34 +191,51 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
                         IndexedStack(
                           index: selectedItem.index,
                           children: [
-
                             // home, profile, orders, settings, logout, cart
                             HomeScreen(
                               onMenuTap: toggleDrawer,
                               isDrawerOpen: isDrawerOpen,
                               onClose: toggleDrawer,
-                              onCartTap: () => setState(() => selectedItem = DrawerItems.cart),
+                              onCartTap: () => setState(
+                                () => selectedItem = DrawerItems.cart,
+                              ),
+                              onSearchTap: () => setState(
+                                () => selectedItem = DrawerItems.search,
+                              ),
+                            ),
+                            // MainWrapper এর build মেথডের ভেতর
+                            SearchScreen(
+                              onMenuTap: toggleDrawer,
+                              isDrawerOpen: isDrawerOpen,
+                              onClose: () {
+                                setState(() {
+                                  selectedItem = DrawerItems
+                                      .home; // ব্যাক বাটনে চাপ দিলে হোমে ফিরবে
+                                });
+                              },
                             ),
                             ProfileScreen(
-                                onMenuTap: toggleDrawer,
-                                onClose: toggleDrawer,
-                                isDrawerOpen: isDrawerOpen
+                              onMenuTap: toggleDrawer,
+                              onClose: toggleDrawer,
+                              isDrawerOpen: isDrawerOpen,
                             ),
                             OrderScreen(
-                                onMenuTap: toggleDrawer,
-                                onClose: toggleDrawer,
-                                isDrawerOpen: isDrawerOpen
+                              onMenuTap: toggleDrawer,
+                              onClose: toggleDrawer,
+                              isDrawerOpen: isDrawerOpen,
                             ),
                             SettingScreen(
-                                onMenuTap: toggleDrawer,
-                                onClose: toggleDrawer,
-                                isDrawerOpen: isDrawerOpen
+                              onMenuTap: toggleDrawer,
+                              onClose: toggleDrawer,
+                              isDrawerOpen: isDrawerOpen,
                             ),
-                            const Center(child: Text("Logout", style: TextStyle(color: Colors.white))),
+                            const Center(
+                              child: Text(
+                                "Logout",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
 
-                            // const Center(child: Text("Profile", style: TextStyle(color: Colors.white))),
-                            // const Center(child: Text("Orders", style: TextStyle(color: Colors.white))),
-                            // const Center(child: Text("Settings", style: TextStyle(color: Colors.white))),
                             CartScreen(
                               onMenuTap: toggleDrawer,
                               onClose: toggleDrawer,
@@ -253,14 +277,33 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
               child: Icon(Icons.person, size: 40, color: Color(0xFF1B1B2F)),
             ),
             const SizedBox(height: 15),
-            const Text("User Name", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            const Text("user@email.com", style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const Text(
+              "User Name",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Text(
+              "user@email.com",
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
             const SizedBox(height: 40),
             _drawerTile(Icons.home_rounded, "Home", DrawerItems.home),
+            _drawerTile(Icons.search, "Search", DrawerItems.search),
             _drawerTile(Icons.person_rounded, "Profile", DrawerItems.profile),
-            _drawerTile(Icons.shopping_bag_rounded, "Orders", DrawerItems.orders),
+            _drawerTile(
+              Icons.shopping_bag_rounded,
+              "Orders",
+              DrawerItems.orders,
+            ),
             _drawerTile(Icons.shopping_cart_rounded, "Cart", DrawerItems.cart),
-            _drawerTile(Icons.settings_rounded, "Settings", DrawerItems.settings),
+            _drawerTile(
+              Icons.settings_rounded,
+              "Settings",
+              DrawerItems.settings,
+            ),
             const Spacer(),
             _drawerTile(Icons.logout_rounded, "Logout", DrawerItems.logout),
           ],
@@ -275,7 +318,6 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
       onTap: () {
         setState(() => selectedItem = item);
         toggleDrawer();
-
 
         // ড্রয়ার ওপেন বা ক্লোজ হওয়ার সময় স্ট্যাটাস বারের কালার কন্ট্রোল
         SystemChrome.setSystemUIOverlayStyle(
@@ -295,9 +337,20 @@ class _MainWrapperState extends State<MainWrapper> with SingleTickerProviderStat
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSelected ? Colors.blue : Colors.white70, size: 24),
+            Icon(
+              icon,
+              color: isSelected ? Colors.blue : Colors.white70,
+              size: 24,
+            ),
             const SizedBox(width: 15),
-            Text(title, style: TextStyle(color: isSelected ? Colors.blue : Colors.white70, fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? Colors.blue : Colors.white70,
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
           ],
         ),
       ),

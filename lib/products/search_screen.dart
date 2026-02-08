@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
 import '../models/model.dart';
@@ -7,7 +6,17 @@ import '../products/products_cart.dart'; // ProductCard এখানে আছ�
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+
+  final VoidCallback onMenuTap;
+  final VoidCallback onClose;
+  final bool isDrawerOpen;
+
+  const SearchScreen({
+    super.key,
+    required this.onMenuTap,
+    required this.onClose,
+    required this.isDrawerOpen,
+  });
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -22,6 +31,10 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isLoading = false;
   int _offset = 0;
   Timer? _debounce;
+  // ফিল্টার স্টেট
+  String _selectedCategory = "";
+  RangeValues _currentPriceRange = const RangeValues(0, 100000);
+  String _currentSort = "relevance"; // default sort
 
   @override
   void initState() {
@@ -30,9 +43,8 @@ class _SearchScreenState extends State<SearchScreen> {
     _scrollController.addListener(_scrollListener);
   }
 
-
   // সাজেশনের জন্য আলাদা লিস্ট
-  List<String> _suggestions = [];
+  List<dynamic> _suggestions = [];
 
   _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
@@ -56,7 +68,10 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  Future<void> _performSearch(String query, {bool isNewSearch = false}) async {
+  Future<void> _performSearch({bool isNewSearch = false}) async {
+    String query = _controller.text.trim();
+    if (query.isEmpty) return;
+
     if (isNewSearch) {
       setState(() {
         _results = [];
@@ -66,8 +81,24 @@ class _SearchScreenState extends State<SearchScreen> {
       _saveRecentSearch(query);
     }
 
+    // ডাইনামিক প্যারামিটার তৈরি
+    final Map<String, dynamic> requestParams = {
+      'q': _controller.text.trim(),
+      'offset': _offset,
+      'min_price': _currentPriceRange.start, // আপনার স্লাইডারের ভ্যালু
+      'max_price': _currentPriceRange.end,
+      'sort': _currentSort, // relevance, price_low, etc.
+    };
+
+    // ক্যাটাগরি থাকলে যোগ করুন
+    if (_selectedCategory.isNotEmpty) {
+      requestParams['category'] = _selectedCategory;
+    }
+
     try {
-      final newProducts = await ApiService().searchProducts(query, _offset);
+      // এপিআই কল
+      final newProducts = await ApiService().searchProducts(requestParams);
+
       if (mounted) {
         setState(() {
           _results.addAll(newProducts);
@@ -76,15 +107,26 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _updateFilter({String? category, RangeValues? price, String? sort}) {
+    setState(() {
+      if (category != null) _selectedCategory = category;
+      if (price != null) _currentPriceRange = price;
+      if (sort != null) _currentSort = sort;
+    });
+
+    // ১ কোটি ডেটার জন্য ফিল্টার চেঞ্জ করলে সবসময় নতুন করে সার্চ শুরু করতে হয়
+    _performSearch(isNewSearch: true);
   }
 
   void _scrollListener() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.8) {
       if (!_isLoading && _controller.text.isNotEmpty) {
-        _performSearch(_controller.text);
+        _performSearch();
       }
     }
   }
@@ -104,7 +146,6 @@ class _SearchScreenState extends State<SearchScreen> {
       _recentSearches = prefs.getStringList('recent_search') ?? [];
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -139,9 +180,114 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  // Widget _buildCustomAppBar() {
+  //   return Container(
+  //     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.04),
+  //           blurRadius: 10,
+  //           offset: const Offset(0, 2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         // ব্যাক বাটন (আরও মার্জিত ডিজাইন)
+  //         InkWell(
+  //           onTap: () => Navigator.pop(context),
+  //           borderRadius: BorderRadius.circular(50),
+  //           child: const Padding(
+  //             padding: EdgeInsets.all(8.0),
+  //             child: Icon(
+  //               Icons.arrow_back_ios_new_rounded,
+  //               size: 22,
+  //               color: Colors.black87,
+  //             ),
+  //           ),
+  //         ),
+  //         const SizedBox(width: 8),
+
+  //         // মেইন সার্চ কন্টেইনার
+  //         Expanded(
+  //           child: Container(
+  //             height: 46,
+  //             decoration: BoxDecoration(
+  //               color: const Color(
+  //                 0xFFF3F4F6,
+  //               ), // হালকা গ্রে ব্যাকগ্রাউন্ড (Amazon/Google Style)
+  //               borderRadius: BorderRadius.circular(12),
+  //               border: Border.all(color: Colors.grey.shade200, width: 1),
+  //             ),
+  //             child: TextField(
+  //               controller: _controller,
+  //               autofocus: true,
+  //               onChanged: _onSearchChanged,
+  //               onSubmitted: (value) {
+  //                 if (value.trim().isNotEmpty) {
+  //                   setState(
+  //                     () => _suggestions = [],
+  //                   ); // মেইন সার্চ শুরু হলে সাজেশন বন্ধ
+  //                   _performSearch(isNewSearch: true);
+  //                 }
+  //               },
+  //               textInputAction:
+  //                   TextInputAction.search, // কী-বোর্ডে সার্চ বাটন দেখাবে
+  //               style: const TextStyle(
+  //                 fontSize: 15,
+  //                 fontWeight: FontWeight.w400,
+  //               ),
+  //               decoration: InputDecoration(
+  //                 hintText: "Search items, brands, categories...",
+  //                 hintStyle: TextStyle(
+  //                   color: Colors.grey.shade500,
+  //                   fontSize: 14,
+  //                 ),
+  //                 prefixIcon: Icon(
+  //                   Icons.search_rounded,
+  //                   color: _controller.text.isNotEmpty
+  //                       ? Colors.green
+  //                       : Colors.grey.shade400,
+  //                   size: 22,
+  //                 ),
+  //                 suffixIcon: _controller.text.isNotEmpty
+  //                     ? IconButton(
+  //                         icon: Container(
+  //                           padding: const EdgeInsets.all(2),
+  //                           decoration: BoxDecoration(
+  //                             color: Colors.grey.shade400,
+  //                             shape: BoxShape.circle,
+  //                           ),
+  //                           child: const Icon(
+  //                             Icons.close,
+  //                             size: 14,
+  //                             color: Colors.white,
+  //                           ),
+  //                         ),
+  //                         onPressed: () {
+  //                           _controller.clear();
+  //                           setState(() {
+  //                             _suggestions = [];
+  //                             _results = [];
+  //                           });
+  //                         },
+  //                       )
+  //                     : null,
+  //                 border: InputBorder.none,
+  //                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _buildCustomAppBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -152,77 +298,131 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // ব্যাক বাটন (আরও মার্জিত ডিজাইন)
-          InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(50),
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.arrow_back_ios_new_rounded, size: 22, color: Colors.black87),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // মেইন সার্চ কন্টেইনার
-          Expanded(
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6), // হালকা গ্রে ব্যাকগ্রাউন্ড (Amazon/Google Style)
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200, width: 1),
-              ),
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                onChanged: _onSearchChanged,
-                onSubmitted: (value) {
-                  if (value.trim().isNotEmpty) {
-                    setState(() => _suggestions = []); // মেইন সার্চ শুরু হলে সাজেশন বন্ধ
-                    _performSearch(value.trim(), isNewSearch: true);
-                  }
-                },
-                textInputAction: TextInputAction.search, // কী-বোর্ডে সার্চ বাটন দেখাবে
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w400),
-                decoration: InputDecoration(
-                  hintText: "Search items, brands, categories...",
-                  hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: _controller.text.isNotEmpty ? Colors.green : Colors.grey.shade400,
-                    size: 22,
-                  ),
-                  suffixIcon: _controller.text.isNotEmpty
-                      ? IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close, size: 14, color: Colors.white),
-                    ),
-                    onPressed: () {
-                      _controller.clear();
-                      setState(() {
-                        _suggestions = [];
-                        _results = [];
-                      });
-                    },
-                  )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+      child: SafeArea(
+        // স্ট্যাটাস বার সেভ রাখার জন্য
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(
+              maxWidth: 800,
+            ), // প্রফেশনাল লুকের জন্য Max Width সেট করা
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              children: [
+                // ব্যাক বাটন
+                _buildIconButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: widget.onClose,
                 ),
-              ),
+                const SizedBox(width: 12),
+
+                // মেইন সার্চ কন্টেইনার
+                Expanded(
+                  child: Container(
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200, width: 1),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      autofocus: true,
+                      onChanged: _onSearchChanged,
+                      onSubmitted: (value) {
+                        if (value.trim().isNotEmpty) {
+                          setState(() => _suggestions = []);
+                          _performSearch(isNewSearch: true);
+                        }
+                      },
+                      textInputAction: TextInputAction.search,
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: "Search items, brands...",
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: _controller.text.isNotEmpty
+                              ? Colors.green
+                              : Colors.grey.shade400,
+                          size: 22,
+                        ),
+                        suffixIcon: _controller.text.isNotEmpty
+                            ? IconButton(
+                                icon: CircleAvatar(
+                                  radius: 8,
+                                  backgroundColor: Colors.grey.shade400,
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  _controller.clear();
+                                  setState(() {
+                                    _suggestions = [];
+                                    _results = [];
+                                  });
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // ফিল্টার বাটন (App Bar এর ভেতরেই সার্চের পাশে)
+                _buildIconButton(
+                  icon: Icons.tune_rounded, // আধুনিক ফিল্টার আইকন
+                  onTap: () {
+                    // এখানে ফিল্টার বটম শীট বা ডায়ালগ কল করুন
+                  },
+                  isFilter: true,
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
+
+  // আইকন বাটনের জন্য একটি কমন উইজেট (কোড ক্লিন রাখার জন্য)
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isFilter = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: isFilter
+            ? BoxDecoration(
+                color: Colors.green.withOpacity(
+                  0.1,
+                ), // ফিল্টার বাটনে হালকা ব্যাকগ্রাউন্ড
+                borderRadius: BorderRadius.circular(12),
+              )
+            : null,
+        child: Icon(
+          icon,
+          size: 22,
+          color: isFilter ? Colors.green : Colors.black87,
+        ),
+      ),
+    );
+  }
+
   // ২. সুন্দর রিসেন্ট সার্চ এবং ট্রেন্ডিং সেকশন
   Widget _buildInitialView() {
     return ListView(
@@ -281,7 +481,7 @@ class _SearchScreenState extends State<SearchScreen> {
     return GestureDetector(
       onTap: () {
         _controller.text = label;
-        _performSearch(label, isNewSearch: true);
+        _performSearch(isNewSearch: true);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -330,47 +530,10 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       onTap: () {
         _controller.text = title;
-        _performSearch(title, isNewSearch: true);
+        _performSearch(isNewSearch: true);
       },
     );
   }
-
-  // ৩. রেসপন্সিভ সার্চ রেজাল্ট গ্রিড
-  /*  Widget _buildSearchResults() {
-
-    double screenWidth = MediaQuery.of(context).size.width;
-
-    // লজিক: স্ক্রিন যত বড় হবে, কার্ডের ম্যাক্সিমাম সাইজও তত বাড়বে
-    double dynamicMaxExtent = screenWidth < 600
-        ? 180 // ফোনের জন্য ১৮০ পিক্সেল (পারফেক্ট ২ কলাম)
-        : (screenWidth < 1100
-        ? 220 // ট্যাবলেটের জন্য ২২০ পিক্সেল
-        : 260); // ল্যাপটপ বা বড় কম্পিউটারের জন্য ২৬০ পিক্সেল
-
-
-    return GridView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 80),
-      gridDelegate:  SliverGridDelegateWithMaxCrossAxisExtent(
-        // একটি কার্ড সর্বোচ্চ কতটুকু চওড়া হবে।
-        // ১৮০ দিলে সাধারণ ফোনে ২টা, ট্যাবলেটে ৪টা এবং ল্যাপটপে ৮-১০টা কার্ড অটোমেটিক চলে আসবে।
-        maxCrossAxisExtent: dynamicMaxExtent,
-
-        // কার্ডের উচ্চতা ও প্রস্থের অনুপাত (Design consistency বজায় রাখে)
-        childAspectRatio: 0.70,
-
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-      ),
-      itemCount: _results.length + (_isLoading ? 4 : 0), // লোডিং এর সময় বেশি শিমার দেখালে সুন্দর লাগে
-      itemBuilder: (context, index) {
-        if (index < _results.length) {
-          return ProductCard(product: _results[index]);
-        }
-        return _buildShimmerLoading(); // আপনার তৈরি শিমার
-      },
-    );
-  }*/
 
   Widget _buildSearchResults() {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -430,45 +593,66 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSuggestionsOverlay() {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 300),
-      // সর্বোচ্চ ৩০০ পিক্সেল লম্বা হবে
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        itemCount: _suggestions.length,
-        itemBuilder: (context, index) {
-          final suggestion = _suggestions[index];
-          return ListTile(
-            leading: const Icon(
-              Icons.history_rounded,
-              size: 20,
-              color: Colors.grey,
-            ),
-            title: Text(suggestion, style: const TextStyle(fontSize: 14)),
-            onTap: () {
-              _controller.text = suggestion; // বক্সে সাজেশন সেট হবে
-              setState(() => _suggestions = []); // লিস্ট বন্ধ হবে
-              _performSearch(suggestion, isNewSearch: true); // সার্চ শুরু হবে
-            },
-          );
-        },
+    return Material(
+      elevation: 10,
+      borderRadius: BorderRadius.circular(15),
+      color: Colors.white,
+      child: Container(
+        constraints: const BoxConstraints(
+          maxHeight: 350,
+        ), // সর্বোচ্চ ৩৫০ পিক্সেল লম্বা হবে
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: ListView.builder(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          itemCount: _suggestions.length,
+          itemBuilder: (context, index) {
+            // যেহেতু সাজেশন এখন Map, তাই dynamic বা Map<String, dynamic> টাইপ ব্যবহার করুন
+            final Map<String, dynamic> suggestion = _suggestions[index];
+
+            return ListTile(
+              leading: Icon(
+                // টাইপ 'keyword' হলে ঘড়ির আইকন, আর 'product' হলে শপিং ব্যাগের আইকন
+                suggestion['type'] == 'keyword'
+                    ? Icons.history_rounded
+                    : Icons.shopping_bag_outlined,
+                size: 20,
+                color: Colors.grey.shade600,
+              ),
+              title: Text(
+                suggestion['text'], // PHP থেকে পাঠানো 'text' কি ব্যবহার হচ্ছে
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+              trailing: const Icon(
+                Icons.north_west,
+                size: 14,
+                color: Colors.grey,
+              ), // ছোট একটি অ্যারো লুক
+              onTap: () {
+                String selectedText = suggestion['text'];
+                _controller.text = selectedText;
+
+                // কার্সার একদম শেষে নেওয়ার জন্য
+                _controller.selection = TextSelection.fromPosition(
+                  TextPosition(offset: _controller.text.length),
+                );
+
+                setState(() => _suggestions = []); // লিস্ট বন্ধ হবে
+                _performSearch(isNewSearch: true); // মেইন সার্চ শুরু হবে
+                FocusScope.of(context).unfocus(); // কী-বোর্ড হাইড হবে
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
-  // বড় স্ক্রিনের সাইডবার
   Widget _buildFilterSidebar() {
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -477,36 +661,49 @@ class _SearchScreenState extends State<SearchScreen> {
           "Sort By",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        const SizedBox(height: 10),
-        _filterRadio("Newest Arrivals"),
-        _filterRadio("Price: Low to High"),
-        _filterRadio("Price: High to Low"),
-        const Divider(height: 30),
+        _filterRadio("Relevance", "relevance"),
+        _filterRadio("Price: Low to High", "price_low"),
+        _filterRadio("Price: High to Low", "price_high"),
+
+        const Divider(height: 40),
 
         const Text(
           "Price Range",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         RangeSlider(
-          values: const RangeValues(500, 5000),
+          values: _currentPriceRange,
           min: 0,
-          max: 10000,
+          max: 100000,
           activeColor: Colors.green,
-          onChanged: (values) {},
+          onChanged: (values) => setState(() => _currentPriceRange = values),
+          onChangeEnd: (values) =>
+              _updateFilter(price: values), // স্লাইডার ছাড়া হলে সার্চ হবে
         ),
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text("৳০"), Text("৳১০,০০০+")],
+          children: [
+            Text("৳${_currentPriceRange.start.toInt()}"),
+            Text("৳${_currentPriceRange.end.toInt()}"),
+          ],
         ),
-        const Divider(height: 30),
+
+        const Divider(height: 40),
 
         const Text(
           "Categories",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        _filterCheckbox("Electronics (1.2k)"),
-        _filterCheckbox("Men's Fashion (450)"),
-        _filterCheckbox("Gadgets & Devices (800)"),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          children: [
+            _buildCategoryChip("Electronics"),
+            _buildCategoryChip("Fashion"),
+            _buildCategoryChip("Gadgets"),
+            _buildCategoryChip("Home"),
+          ],
+        ),
       ],
     );
   }
@@ -528,7 +725,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           TextButton.icon(
             onPressed: () {
-              /* নিচ থেকে বটম শিট ফিল্টার ওপেন হবে */
+              _showFilterBottomSheet();
             },
             icon: const Icon(Icons.filter_list, size: 18, color: Colors.black),
             label: const Text("Filters", style: TextStyle(color: Colors.black)),
@@ -537,6 +734,23 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
+
+  // Widget _buildMobileFilterBar() {
+  //   return Container(
+  //     // ... existing decoration ...
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Text("${_results.length} Products found"),
+  //         TextButton.icon(
+  //           onPressed: () => , // এখানে কল করুন
+  //           icon: const Icon(Icons.filter_list),
+  //           label: const Text("Filters"),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _filterCheckbox(String title) {
     return CheckboxListTile(
@@ -549,12 +763,112 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _filterRadio(String title) {
+  // সর্টিং রেডিও বাটন
+  Widget _filterRadio(String title, String value) {
     return Row(
       children: [
-        Radio(value: title, groupValue: "", onChanged: (v) {}),
+        Radio<String>(
+          value: value,
+          groupValue: _currentSort, // বর্তমান স্টেট
+          activeColor: Colors.green,
+          onChanged: (v) {
+            if (v != null) _updateFilter(sort: v);
+          },
+        ),
         Text(title, style: const TextStyle(fontSize: 14)),
       ],
+    );
+  }
+
+  // ক্যাটাগরি চিপস (চেকবক্সের চেয়ে চিপস বেশি আধুনিক)
+  Widget _buildCategoryChip(String categoryName) {
+    bool isSelected = _selectedCategory == categoryName;
+    return ChoiceChip(
+      label: Text(categoryName),
+      selected: isSelected,
+      onSelected: (selected) {
+        _updateFilter(category: selected ? categoryName : "");
+      },
+      selectedColor: Colors.green.shade100,
+      checkmarkColor: Colors.green,
+    );
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          // বটম শিটের ভেতর স্টেট পরিবর্তনের জন্য
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Filter Products",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Divider(),
+
+                  // প্রাইস স্লাইডার
+                  Text(
+                    "Price: ৳${_currentPriceRange.start.toInt()} - ৳${_currentPriceRange.end.toInt()}",
+                  ),
+                  RangeSlider(
+                    values: _currentPriceRange,
+                    min: 0,
+                    max: 100000, // আপনার হাইয়েস্ট প্রাইস অনুযায়ী
+                    divisions: 20,
+                    onChanged: (values) {
+                      setModalState(
+                        () => _currentPriceRange = values,
+                      ); // UI আপডেট
+                      setState(
+                        () => _currentPriceRange = values,
+                      ); // মেইন স্টেট আপডেট
+                    },
+                  ),
+
+                  // সর্টিং অপশন
+                  ListTile(
+                    title: const Text("Price: Low to High"),
+                    leading: Radio(
+                      value: "price_low",
+                      groupValue: _currentSort,
+                      onChanged: (v) {
+                        setModalState(() => _currentSort = v.toString());
+                        _updateFilter(sort: v.toString());
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      minimumSize: const Size(double.infinity, 45),
+                    ),
+                    onPressed: () {
+                      _performSearch(isNewSearch: true);
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      "Apply Filters",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -596,139 +910,3 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
-
-/*
-import 'dart:async';
-import 'package:flutter/material.dart';
-import '../api/api_service.dart';
-import '../models/model.dart';
-import '../products/products_cart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
-
-  @override
-  State<SearchScreen> createState() => _SearchScreenState();
-}
-
-class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  List<Product> _results = [];
-  List<String> _recentSearches = [];
-  bool _isLoading = false;
-  int _offset = 0; // Pagination এর জন্য
-  Timer? _debounce;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecentSearches();
-    _scrollController.addListener(_scrollListener);
-  }
-
-  // ১ কোটি ডেটার জন্য ১০০০ms Debounce দেওয়া নিরাপদ
-  _onSearchChanged(String query) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 800), () {
-      if (query.isNotEmpty) {
-        _performSearch(query, isNewSearch: true);
-      }
-    });
-  }
-
-  Future<void> _performSearch(String query, {bool isNewSearch = false}) async {
-    if (isNewSearch) {
-      setState(() {
-        _results.clear();
-        _offset = 0;
-        _isLoading = true;
-      });
-      _saveRecentSearch(query);
-    }
-
-    // API কল - এখানে LIMIT ২০ করে ডেটা আসবে
-    final newProducts = await ApiService().searchProducts(query, _offset);
-
-    setState(() {
-      _results.addAll(newProducts);
-      _offset += 20;
-      _isLoading = false;
-    });
-  }
-
-  void _scrollListener() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoading && _controller.text.isNotEmpty) {
-        _performSearch(_controller.text);
-      }
-    }
-  }
-
-  // Shared Preferences এ সেভ করা
-  _saveRecentSearch(String query) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!_recentSearches.contains(query)) {
-      _recentSearches.insert(0, query);
-      if (_recentSearches.length > 5) _recentSearches.removeLast();
-      await prefs.setStringList('recent_search', _recentSearches);
-    }
-  }
-
-  _loadRecentSearches() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _recentSearches = prefs.getStringList('recent_search') ?? [];
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_ios, color: Colors.black)),
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          onChanged: _onSearchChanged,
-          decoration: const InputDecoration(hintText: "Search items...", border: InputBorder.none),
-        ),
-      ),
-      body: _results.isEmpty && !_isLoading
-          ? _buildRecentSearches()
-          : _buildSearchResults(),
-    );
-  }
-
-  Widget _buildRecentSearches() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(padding: EdgeInsets.all(16), child: Text("Recent Searches", style: TextStyle(fontWeight: FontWeight.bold))),
-        Wrap(
-          children: _recentSearches.map((s) => ActionChip(label: Text(s), onPressed: () {
-            _controller.text = s;
-            _performSearch(s, isNewSearch: true);
-          })).toList(),
-        )
-      ],
-    );
-  }
-
-  Widget _buildSearchResults() {
-    return GridView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.7, mainAxisSpacing: 10, crossAxisSpacing: 10),
-      itemCount: _results.length + (_isLoading ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index < _results.length) return ProductCard(product: _results[index]);
-        return const Center(child: CircularProgressIndicator());
-      },
-    );
-  }
-}*/

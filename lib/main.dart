@@ -1,9 +1,7 @@
 import 'package:bastoopshop/app_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/services.dart' ;
 import 'package:provider/provider.dart';
-import 'package:flutter/services.dart';
 
 import 'cart/cart_controller.dart';
 import 'main_wrapper.dart';
