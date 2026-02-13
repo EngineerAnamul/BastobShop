@@ -1,5 +1,8 @@
-import 'package:bastoopshop/products/seller_profile_sheet.dart';
+import 'package:bastoopshop/cart/cart_controller.dart';
+import 'package:bastoopshop/profile/seller_profile_sheet.dart';
+import 'package:bastoopshop/service/ui_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../api/api_service.dart';
 import '../models/model.dart';
@@ -61,6 +64,47 @@ class _DetailsContent extends StatelessWidget {
                                   height: 350,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
+                                  // ইমেজ লোড হওয়ার সময় যা দেখাবে (যদি আলাদা শিমার না থাকে)
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        }
+                                        return const CommonShimmer(
+                                          width: double.infinity,
+                                          height: 350,
+                                          borderRadius: 20,
+                                        );
+                                      },
+                                  // ইমেজ পাথ ভুল থাকলে বা ইন্টারনেট না থাকলে এই অংশ কাজ করবে
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 350,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.broken_image_outlined,
+                                            color: Colors.grey[400],
+                                            size: 50,
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            "Image not available",
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
                         ),
                         if (!isLoading)
@@ -205,7 +249,7 @@ class _DetailsContent extends StatelessWidget {
                               height: 1.5,
                             ),
                           ),
-/*
+                    /*
 
                     // ৬. ট্রাস্ট ব্যাজ
                     Row(
@@ -225,37 +269,49 @@ class _DetailsContent extends StatelessWidget {
                     const SizedBox(height: 100),
 */
 
-
-
-
-                  // ৬. ট্রাস্ট ব্যাজ সেকশন (রেসপন্সিভ ও শিমার যুক্ত)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: isLoading
-                        ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(
-                        3,
-                            (index) => Column(
-                          children: [
-                            CommonShimmer.circular(width: 45, height: 45), // আইকনের জন্য গোল শিমার
-                            const SizedBox(height: 10),
-                            CommonShimmer(width: 60, height: 10, borderRadius: 4), // টেক্সটের জন্য শিমার
-                          ],
-                        ),
-                      ),
-                    )
-                        : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _trustIcon(Icons.local_shipping_rounded, "Fast Delivery"),
-                        _trustIcon(Icons.verified_user_rounded, "100% Original"),
-                        _trustIcon(Icons.assignment_return_rounded, "7 Days Return"),
-                      ],
+                    // ৬. ট্রাস্ট ব্যাজ সেকশন (রেসপন্সিভ ও শিমার যুক্ত)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: isLoading
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: List.generate(
+                                3,
+                                (index) => Column(
+                                  children: [
+                                    CommonShimmer.circular(
+                                      width: 45,
+                                      height: 45,
+                                    ), // আইকনের জন্য গোল শিমার
+                                    const SizedBox(height: 10),
+                                    CommonShimmer(
+                                      width: 60,
+                                      height: 10,
+                                      borderRadius: 4,
+                                    ), // টেক্সটের জন্য শিমার
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _trustIcon(
+                                  Icons.local_shipping_rounded,
+                                  "Fast Delivery",
+                                ),
+                                _trustIcon(
+                                  Icons.verified_user_rounded,
+                                  "100% Original",
+                                ),
+                                _trustIcon(
+                                  Icons.assignment_return_rounded,
+                                  "7 Days Return",
+                                ),
+                              ],
+                            ),
                     ),
-                  ),
-                  const SizedBox(height: 100),
-
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -359,7 +415,17 @@ class _DetailsContent extends StatelessWidget {
                 backgroundColor: Colors.orange,
                 padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              onPressed: isLoading ? null : () => Navigator.pop(context),
+              onPressed: () {
+                Provider.of<CartProvider>(
+                  context,
+                  listen: false,
+                ).addToCart(product);
+                Navigator.pop(context);
+                UIService.showSuccessSnackBar(
+                  context,
+                  "${product.name} added to cart!",
+                );
+              },
               // লোডিং অবস্থায় অফ
               child: const Text(
                 "Add to Cart",
@@ -420,7 +486,6 @@ class _DetailsContent extends StatelessWidget {
 //   );
 // }
 
-
 // --- রেসপন্সিভ ট্রাস্ট আইকন উইজেট ---
 Widget _trustIcon(IconData icon, String text) {
   return Builder(
@@ -438,7 +503,9 @@ Widget _trustIcon(IconData icon, String text) {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blueGrey.withOpacity(0.05), // হালকা ব্যাকগ্রাউন্ড প্রিমিয়াম লুক দেয়
+                color: Colors.blueGrey.withOpacity(
+                  0.05,
+                ), // হালকা ব্যাকগ্রাউন্ড প্রিমিয়াম লুক দেয়
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: Colors.blueGrey[800], size: iconSize),
@@ -447,7 +514,8 @@ Widget _trustIcon(IconData icon, String text) {
             Text(
               text,
               textAlign: TextAlign.center,
-              maxLines: 2, // লম্বা টেক্সট হলে ২ লাইনে যাবে কিন্তু ডিজাইন ভাঙবে না
+              maxLines:
+                  2, // লম্বা টেক্সট হলে ২ লাইনে যাবে কিন্তু ডিজাইন ভাঙবে না
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.w500,
@@ -461,6 +529,7 @@ Widget _trustIcon(IconData icon, String text) {
     },
   );
 }
+
 /*
 import 'package:bastoopshop/products/seller_profile_sheet.dart';
 import 'package:flutter/material.dart';

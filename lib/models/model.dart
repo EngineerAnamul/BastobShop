@@ -35,21 +35,62 @@ class Product {
 
 
   // ১ কোটি ডেটার সময় JSON কী (Key) মিসিং থাকলে অ্যাপ যেন ক্রাশ না করে
-  factory Product.fromJson(Map<String, dynamic> json) {
+  // factory Product.fromJson(Map<String, dynamic> json) {
+  //   return Product(
+  //     id: int.tryParse(json['id'].toString()) ?? 0,
+  //     name: json['name']?.toString() ?? "Unnamed Product",
+  //     price: json['price']?.toString() ?? "0.0",
+  //     discountPrice: json['discount_price']?.toString(),
+  //     imageUrl: json['image_url']?.toString() ?? "",
+  //     description: json['description']?.toString(),
+  //     stockCount: json['stock_count']?.toString(),
+  //     vendorName: json['store_name']?.toString(),
+  //     sellerRating: double.tryParse(json['seller_rating']?.toString() ?? "0"),
+  //     reviewsCount: int.tryParse(json['reviews_count']?.toString() ?? "0"),
+  //     avgRating: double.tryParse(json['avg_rating']?.toString() ?? "0"),
+  //   );
+  // }
+
+
+
+factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: int.tryParse(json['id'].toString()) ?? 0,
+      // ১. ID হ্যান্ডেলিং (১০ লাখ ইউজারের জন্য টাইপ সেফটি জরুরি)
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
+
+      // ২. নাম
       name: json['name']?.toString() ?? "Unnamed Product",
+
+      // ৩. প্রাইস (Go থেকে float আসে, তাই string এ কনভার্ট করুন)
       price: json['price']?.toString() ?? "0.0",
-      discountPrice: json['discount_price']?.toString(),
+
+      // ৪. ইমেজ ইউআরএল (সবচেয়ে গুরুত্বপূর্ণ: সার্ভার পাঠায় image_url)
       imageUrl: json['image_url']?.toString() ?? "",
-      description: json['description']?.toString(),
-      stockCount: json['stock_count']?.toString(),
-      vendorName: json['store_name']?.toString(),
-      sellerRating: double.tryParse(json['seller_rating']?.toString() ?? "0"),
-      reviewsCount: int.tryParse(json['reviews_count']?.toString() ?? "0"),
-      avgRating: double.tryParse(json['avg_rating']?.toString() ?? "0"),
+
+      // ৫. ডিসকাউন্ট প্রাইস (যদি সার্ভার না পাঠায় তবে null)
+      discountPrice: json['discount_price']?.toString(),
+
+      // ৬. এই ফিল্ডগুলো Go সার্ভার এখনো পাঠাচ্ছে না, তাই ডিফল্ট ভ্যালু দিন
+      description: json['description']?.toString() ?? "",
+      stockCount: json['stock_count']?.toString() ?? "In Stock",
+      vendorName:
+          json['vendor_name']?.toString() ??
+          json['store_name']?.toString() ??
+          "Bastob Seller",
+
+      // ৭. রেটিং (সার্ভার থেকে না আসলে ডিফল্ট ০.০)
+      sellerRating:
+          double.tryParse(json['seller_rating']?.toString() ?? "0.0") ?? 0.0,
+      reviewsCount: int.tryParse(json['reviews_count']?.toString() ?? "0") ?? 0,
+      avgRating:
+          double.tryParse(json['avg_rating']?.toString() ?? "0.0") ?? 0.0,
+
+      quantity: 1,
     );
   }
+
 
 
 // ApiService এর জন্য আলাদা fromMap (সহজ ম্যাপ করার জন্য)

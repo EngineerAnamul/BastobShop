@@ -1,3 +1,4 @@
+import 'package:bastoopshop/products/product_details.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // প্রোভাইডার ইমপোর্ট
 import '../app_color.dart';
@@ -113,7 +114,8 @@ class CartScreen extends StatelessWidget { // StatefulWidget এর আর দ�
         ],
       ),
       child: InkWell(
-        onTap: () => _showProductDetails(context, product),
+        // onTap: () => ProductDetailsSheet(context, product),
+        onTap: () => ProductDetailsSheet.show(context, product),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -408,393 +410,393 @@ class CartScreen extends StatelessWidget { // StatefulWidget এর আর দ�
     );
   }
 
-  void _showProductDetails(BuildContext context, Product product) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          children: [
-            // উপরে ড্র্যাগ করার হ্যান্ডেল
-            const SizedBox(height: 12),
-            Container(
-              width: 50,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+//   void _showProductDetails(BuildContext context, Product product) {
+//     showModalBottomSheet(
+//       context: context,
+//       isScrollControlled: true,
+//       backgroundColor: Colors.transparent,
+//       builder: (context) => Container(
+//         height: MediaQuery.of(context).size.height * 0.85,
+//         decoration: const BoxDecoration(
+//           color: Colors.white,
+//           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+//         ),
+//         child: Column(
+//           children: [
+//             // উপরে ড্র্যাগ করার হ্যান্ডেল
+//             const SizedBox(height: 12),
+//             Container(
+//               width: 50,
+//               height: 5,
+//               decoration: BoxDecoration(
+//                 color: Colors.grey[300],
+//                 borderRadius: BorderRadius.circular(10),
+//               ),
+//             ),
 
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  const SizedBox(height: 15),
-                  // ১. ইমেজ স্লাইডার (প্রফেশনাল লুক)
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          product.imageUrl,
-                          height: 350,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 15,
-                        right: 15,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.white.withOpacity(0.8),
-                          child: IconButton(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.favorite_border,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+//             Expanded(
+//               child: ListView(
+//                 padding: const EdgeInsets.symmetric(horizontal: 20),
+//                 children: [
+//                   const SizedBox(height: 15),
+//                   // ১. ইমেজ স্লাইডার (প্রফেশনাল লুক)
+//                   Stack(
+//                     children: [
+//                       ClipRRect(
+//                         borderRadius: BorderRadius.circular(20),
+//                         child: Image.network(
+//                           product.imageUrl,
+//                           height: 350,
+//                           width: double.infinity,
+//                           fit: BoxFit.cover,
+//                         ),
+//                       ),
+//                       Positioned(
+//                         top: 15,
+//                         right: 15,
+//                         child: CircleAvatar(
+//                           backgroundColor: Colors.white.withOpacity(0.8),
+//                           child: IconButton(
+//                             onPressed: () {},
+//                             icon: const Icon(
+//                               Icons.favorite_border,
+//                               color: Colors.red,
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                   const SizedBox(height: 20),
 
-                  // ২. নাম এবং রেটিং
-                  Text(
-                    product.name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.orange,
-                              size: 16,
-                            ),
-                            Text(
-                              " 4.5",
-                              style: TextStyle(
-                                color: Colors.green[800],
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        "124 Reviews",
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Text(
-                        "In Stock",
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+//                   // ২. নাম এবং রেটিং
+//                   Text(
+//                     product.name,
+//                     style: const TextStyle(
+//                       fontSize: 22,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 8),
+//                   Row(
+//                     children: [
+//                       Container(
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 8,
+//                           vertical: 4,
+//                         ),
+//                         decoration: BoxDecoration(
+//                           color: Colors.green[50],
+//                           borderRadius: BorderRadius.circular(5),
+//                         ),
+//                         child: Row(
+//                           children: [
+//                             const Icon(
+//                               Icons.star,
+//                               color: Colors.orange,
+//                               size: 16,
+//                             ),
+//                             Text(
+//                               " 4.5",
+//                               style: TextStyle(
+//                                 color: Colors.green[800],
+//                                 fontWeight: FontWeight.bold,
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                       const SizedBox(width: 10),
+//                       Text(
+//                         "124 Reviews",
+//                         style: TextStyle(
+//                           color: Colors.grey[600],
+//                           decoration: TextDecoration.underline,
+//                         ),
+//                       ),
+//                       const Spacer(),
+//                       const Text(
+//                         "In Stock",
+//                         style: TextStyle(
+//                           color: Colors.green,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
 
-                  const Divider(height: 35),
+//                   const Divider(height: 35),
 
-                  // ৩. দাম সেকশন (৳)
-                  Row(
-                    children: [
-                      Text(
-                        "৳ ${product.price}",
-                        style: TextStyle(
-                          fontSize: 26,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        "৳ ${product.price}",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: const Text(
-                          "20% OFF",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+//                   // ৩. দাম সেকশন (৳)
+//                   Row(
+//                     children: [
+//                       Text(
+//                         "৳ ${product.price}",
+//                         style: TextStyle(
+//                           fontSize: 26,
+//                           color: AppColors.primary,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                       const SizedBox(width: 10),
+//                       Text(
+//                         "৳ ${product.price}",
+//                         style: const TextStyle(
+//                           fontSize: 16,
+//                           color: Colors.grey,
+//                           decoration: TextDecoration.lineThrough,
+//                         ),
+//                       ),
+//                       const SizedBox(width: 10),
+//                       Container(
+//                         padding: const EdgeInsets.all(4),
+//                         decoration: BoxDecoration(
+//                           color: Colors.red,
+//                           borderRadius: BorderRadius.circular(5),
+//                         ),
+//                         child: const Text(
+//                           "20% OFF",
+//                           style: TextStyle(
+//                             color: Colors.white,
+//                             fontSize: 10,
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
 
-                  const SizedBox(height: 20),
+//                   const SizedBox(height: 20),
 
-                  // ৪. মাল্টি-ভেন্ডার স্পেশাল: সেলার ইনফো (Professional Style)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blueGrey[50],
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.blueGrey.shade100),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const CircleAvatar(
-                              backgroundColor: Colors.blue,
-                              child: Icon(Icons.store, color: Colors.white),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Sold by: Bastob Vendor Ltd.",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  Text(
-                                    "Positive Seller Ratings: 92%",
-                                    style: TextStyle(
-                                      color: Colors.grey[700],
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            OutlinedButton(
-                              onPressed: () {
-                                // আগের প্রোডাক্ট ডিটেইলস শিটটি বন্ধ করে সেলার শিটটি খুলবে
-                                // Navigator.pop(context);
-                                _showSellerFullProfile(
-                                  context,
-                                  product,
-                                ); // নতুন এই ফাংশনটি কল হবে
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: AppColors.primary),
-                              ),
-                              child: const Text(
-                                "Visit Store",
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+//                   // ৪. মাল্টি-ভেন্ডার স্পেশাল: সেলার ইনফো (Professional Style)
+//                   Container(
+//                     padding: const EdgeInsets.all(12),
+//                     decoration: BoxDecoration(
+//                       color: Colors.blueGrey[50],
+//                       borderRadius: BorderRadius.circular(15),
+//                       border: Border.all(color: Colors.blueGrey.shade100),
+//                     ),
+//                     child: Column(
+//                       children: [
+//                         Row(
+//                           children: [
+//                             const CircleAvatar(
+//                               backgroundColor: Colors.blue,
+//                               child: Icon(Icons.store, color: Colors.white),
+//                             ),
+//                             const SizedBox(width: 12),
+//                             Expanded(
+//                               child: Column(
+//                                 crossAxisAlignment: CrossAxisAlignment.start,
+//                                 children: [
+//                                   const Text(
+//                                     "Sold by: Bastob Vendor Ltd.",
+//                                     style: TextStyle(
+//                                       fontWeight: FontWeight.bold,
+//                                       fontSize: 15,
+//                                     ),
+//                                   ),
+//                                   Text(
+//                                     "Positive Seller Ratings: 92%",
+//                                     style: TextStyle(
+//                                       color: Colors.grey[700],
+//                                       fontSize: 12,
+//                                     ),
+//                                   ),
+//                                 ],
+//                               ),
+//                             ),
+//                             OutlinedButton(
+//                               onPressed: () {
+//                                 // আগের প্রোডাক্ট ডিটেইলস শিটটি বন্ধ করে সেলার শিটটি খুলবে
+//                                 // Navigator.pop(context);
+//                                 _showSellerFullProfile(
+//                                   context,
+//                                   product,
+//                                 ); // নতুন এই ফাংশনটি কল হবে
+//                               },
+//                               style: OutlinedButton.styleFrom(
+//                                 side: BorderSide(color: AppColors.primary),
+//                               ),
+//                               child: const Text(
+//                                 "Visit Store",
+//                                 style: TextStyle(fontSize: 12),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ],
+//                     ),
+//                   ),
 
-                  const SizedBox(height: 25),
+//                   const SizedBox(height: 25),
 
-                  // ৫. ডেসক্রিপশন
-                  const Text(
-                    "Product Details",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "High quality premium material used in this product to ensure durability. Authentic and verified by our QC team.",
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
-                  ),
+//                   // ৫. ডেসক্রিপশন
+//                   const Text(
+//                     "Product Details",
+//                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+//                   ),
+//                   const SizedBox(height: 8),
+//                   Text(
+//                     "High quality premium material used in this product to ensure durability. Authentic and verified by our QC team.",
+//                     style: TextStyle(
+//                       color: Colors.grey[700],
+//                       fontSize: 15,
+//                       height: 1.5,
+//                     ),
+//                   ),
 
-                  const SizedBox(height: 30),
+//                   const SizedBox(height: 30),
 
-                  // ৬. ট্রাস্ট ব্যাজ
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _trustIcon(
-                        Icons.local_shipping_outlined,
-                        "Fast Delivery",
-                      ),
-                      _trustIcon(Icons.verified_outlined, "100% Original"),
-                      _trustIcon(
-                        Icons.assignment_return_outlined,
-                        "7 Days Return",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 100),
-                  // নিচের বাটনের জন্য জায়গা
-                ],
-              ),
-            ),
+//                   // ৬. ট্রাস্ট ব্যাজ
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.spaceAround,
+//                     children: [
+//                       _trustIcon(
+//                         Icons.local_shipping_outlined,
+//                         "Fast Delivery",
+//                       ),
+//                       _trustIcon(Icons.verified_outlined, "100% Original"),
+//                       _trustIcon(
+//                         Icons.assignment_return_outlined,
+//                         "7 Days Return",
+//                       ),
+//                     ],
+//                   ),
+//                   const SizedBox(height: 100),
+//                   // নিচের বাটনের জন্য জায়গা
+//                 ],
+//               ),
+//             ),
 
-            // ৭. বটম অ্যাকশন বার (Buy Now & Add to Cart)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // চ্যাট বাটন (মাল্টি ভেন্ডার এর জন্য জরুরি)
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.chat_outlined, color: Colors.blue),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
+//             // ৭. বটম অ্যাকশন বার (Buy Now & Add to Cart)
+//             Container(
+//               padding: const EdgeInsets.all(20),
+//               decoration: BoxDecoration(
+//                 color: Colors.white,
+//                 boxShadow: [
+//                   BoxShadow(
+//                     color: Colors.black12,
+//                     blurRadius: 10,
+//                     offset: Offset(0, -2),
+//                   ),
+//                 ],
+//               ),
+//               child: Row(
+//                 children: [
+//                   // চ্যাট বাটন (মাল্টি ভেন্ডার এর জন্য জরুরি)
+//                   Container(
+//                     decoration: BoxDecoration(
+//                       border: Border.all(color: Colors.grey.shade300),
+//                       borderRadius: BorderRadius.circular(10),
+//                     ),
+//                     child: IconButton(
+//                       onPressed: () {},
+//                       icon: const Icon(Icons.chat_outlined, color: Colors.blue),
+//                     ),
+//                   ),
+//                   const SizedBox(width: 12),
 
-                  // কার্ট বাটন
-/*                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+//                   // কার্ট বাটন
+// /*                  Expanded(
+//                     child: ElevatedButton(
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: Colors.orange,
+//                         padding: const EdgeInsets.symmetric(vertical: 15),
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(10),
+//                         ),
+//                       ),
 
-                      */
-                  /*                      onPressed: () {
-                        //  কার্টে অ্যাড
-                        addToCart(
-                          product,
-                          onUpdate: () {
-                            // এটি হোম স্ক্রিনকে রিফ্রেশ করবে
-                            setState(() {});
-                          },
-                        );
-                        //  পপ-আপ বন্ধ করুন
-                        Navigator.pop(context);
+//                       */
+//                   /*                      onPressed: () {
+//                         //  কার্টে অ্যাড
+//                         addToCart(
+//                           product,
+//                           onUpdate: () {
+//                             // এটি হোম স্ক্রিনকে রিফ্রেশ করবে
+//                             setState(() {});
+//                           },
+//                         );
+//                         //  পপ-আপ বন্ধ করুন
+//                         Navigator.pop(context);
 
-                        // আগের সব স্নাকবার আগে ক্লিয়ার করুন
-                        ScaffoldMessenger.of(context).clearSnackBars();
+//                         // আগের সব স্নাকবার আগে ক্লিয়ার করুন
+//                         ScaffoldMessenger.of(context).clearSnackBars();
 
-                        //  স্নাকবারটি
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("${product.name} added to cart!"),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            duration: const Duration(seconds: 3), // ৩ সেকেন্ড
-                          ),
-                        );
+//                         //  স্নাকবারটি
+//                         ScaffoldMessenger.of(context).showSnackBar(
+//                           SnackBar(
+//                             content: Text("${product.name} added to cart!"),
+//                             backgroundColor: Colors.green,
+//                             behavior: SnackBarBehavior.floating,
+//                             duration: const Duration(seconds: 3), // ৩ সেকেন্ড
+//                           ),
+//                         );
 
-                        // ৩. একটি ফোর্স টাইমার  (অ্যান্ড্রয়েডের জন্য)
-                        Future.delayed(const Duration(seconds: 3), () {
-                          if (mounted) {
-                            // চেক করে নেওয়া হচ্ছে ইউজার ওই স্ক্রিনে আছে কি না
-                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          }
-                        });
-                      },*/
-                  /*
-                      onPressed: () {
-                        // প্রোভাইডার কল করা
-                        Provider.of<CartProvider>(
-                          context,
-                          listen: false,
-                        ).addToCart(product);
+//                         // ৩. একটি ফোর্স টাইমার  (অ্যান্ড্রয়েডের জন্য)
+//                         Future.delayed(const Duration(seconds: 3), () {
+//                           if (mounted) {
+//                             // চেক করে নেওয়া হচ্ছে ইউজার ওই স্ক্রিনে আছে কি না
+//                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
+//                           }
+//                         });
+//                       },*/
+//                   /*
+//                       onPressed: () {
+//                         // প্রোভাইডার কল করা
+//                         Provider.of<CartProvider>(
+//                           context,
+//                           listen: false,
+//                         ).addToCart(product);
 
-                        Navigator.pop(context);
-                        UIService.showSuccessSnackBar(
-                          context,
-                          "${product.name} added to cart!",
-                        );
-                      },
+//                         Navigator.pop(context);
+//                         UIService.showSuccessSnackBar(
+//                           context,
+//                           "${product.name} added to cart!",
+//                         );
+//                       },
 
 
-*/
-/*                      child: const Text(
-                        "Add to Cart",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),*//*
-                    ),
-                  ),*/
-                  const SizedBox(width: 12),
-                  // বাই নাও বাটন
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () {},
-                      child: const Text(
-                        "Buy Now",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+// */
+// /*                      child: const Text(
+//                         "Add to Cart",
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),*//*
+//                     ),
+//                   ),*/
+//                   const SizedBox(width: 12),
+//                   // বাই নাও বাটন
+//                   Expanded(
+//                     child: ElevatedButton(
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: AppColors.primary,
+//                         padding: const EdgeInsets.symmetric(vertical: 15),
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(10),
+//                         ),
+//                       ),
+//                       onPressed: () {},
+//                       child: const Text(
+//                         "Buy Now",
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontWeight: FontWeight.bold,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 
 }
 void _showSellerFullProfile(BuildContext context, Product product) {

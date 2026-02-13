@@ -1,6 +1,23 @@
 # Project-level configuration.
-cmake_minimum_required(VERSION 3.14)
+# cmake_minimum_required(VERSION 3.14)
+
+# Project-level configuration.
+cmake_minimum_required(VERSION 3.14...4.1)
+
+# Firebase এবং পুরনো মডিউলের জন্য এই লাইনটি যোগ করা জরুরি
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 project(bastoopshop LANGUAGES CXX)
+
+# The name of the executable created for the application.
+set(BINARY_NAME "bastoopshop")
+
+# আধুনিক CMake behaviors ব্যবহার করার জন্য আপডেট করা হলো
+cmake_policy(VERSION 3.14...4.1)
+
+
+# cmake_minimum_required(VERSION 3.14)
+# project(bastoopshop LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.

@@ -1,5 +1,5 @@
 import 'package:bastoopshop/orders/orders_screen.dart';
-import 'package:bastoopshop/products/search_screen.dart';
+import 'package:bastoopshop/search/search_screen.dart';
 import 'package:bastoopshop/profile/profile_screen.dart';
 import 'package:bastoopshop/settings/settings_screen.dart';
 import 'package:flutter/material.dart';

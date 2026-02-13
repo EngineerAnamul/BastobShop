@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:bastoopshop/home/footer.dart';
+import 'package:bastoopshop/utils/load_more_card.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +11,6 @@ import '../app_color.dart';
 import '../cart/cart_controller.dart';
 import '../models/model.dart';
 import '../products/products_cart.dart';
-import '../products/search_screen.dart';
 import '../utils/common_shimmer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -43,9 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // final isLoading = snapshot.connectionState == ConnectionState.waiting;
   bool _hasMore = true;
   bool _isOffline = false;
+  bool _showBackToTopButton = false;
+  double _lastScrollOffset = 0; // স্ক্রল ডিরেকশন চেক করার জন্য
 
   final ScrollController _mainScrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
+  bool _isLoadMoreClicked = false;
+  int currentProductId = 1;
 
   final List<Map<String, dynamic>> categories = [
     {"icon": Icons.phone_android, "name": "Electronics"},
@@ -55,26 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
     {"icon": Icons.watch, "name": "Accessories"},
     {"icon": Icons.sports_esports, "name": "Gaming"},
   ];
-
-  /*
-  @override
-  void initState() {
-    super.initState();
-    _loadMoreProducts(); // শুরুতে ডাটা লোড
-
-    _mainScrollController.addListener(() {
-      // যদি স্ক্রল একদম নিচে চলে আসে (৯০% এর বেশি), তবে নতুন পেজ লোড হবে
-      if (_mainScrollController.position.pixels >=
-          _mainScrollController.position.maxScrollExtent * 0.9) {
-        _loadMoreProducts();
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
-
-
-  }
-*/
 
   @override
   void initState() {
@@ -101,13 +86,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     _mainScrollController.addListener(() {
-      if (_mainScrollController.position.pixels >=
-          _mainScrollController.position.maxScrollExtent * 0.9) {
-        // অফলাইন না থাকলে এবং বর্তমানে লোড না চললে তবেই কল হবে
-        if (!_isOffline && !_isLoading) _loadMoreProducts();
-      }
-    });
+      double currentOffset = _mainScrollController.offset;
+      double maxScroll = _mainScrollController.position.maxScrollExtent;
 
+      // --- Infinity Scrolling Logic ---
+      // যদি ইউজার একদম নিচে চলে আসে (বা নিচ থেকে ২০০ পিক্সেল উপরে থাকে)
+      // if (currentOffset >= maxScroll - 200) {
+      //   _loadMoreProducts(); // নতুন প্রোডাক্ট লোড করার মেথড কল হবে
+      // }
+
+      // --- Back to Top Button Logic ---
+      setState(() {
+        // লজিক: ইউজার উপরের দিকে স্ক্রল করছে এবং ৩০০ পিক্সেলের নিচে আছে
+        if (currentOffset < _lastScrollOffset && currentOffset > 300) {
+          _showBackToTopButton = true;
+        } else {
+          _showBackToTopButton = false;
+        }
+      });
+
+      _lastScrollOffset = currentOffset;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
   }
 
@@ -158,6 +157,14 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       _startAutoScroll(); // লুপ চলতে থাকবে
     });
+  }
+
+  void _scrollToTop() {
+    _mainScrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500), // কত দ্রুত উপরে যাবে
+      curve: Curves.easeInOut, // স্ক্রলিং এনিমেশন স্টাইল
+    );
   }
 
   @override
@@ -231,22 +238,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           _buildLogoTitle(),
 
-                          // Row(
-                          //   children: [
-                          //     _buildGlassCircleIcon(Icons.search_rounded, () {
-                          //       // সার্চ স্ক্রিনে নিয়ে যাবে
-                          //       Navigator.push(
-                          //         context,
-                          //         MaterialPageRoute(
-                          //           builder: (context) => const SearchScreen(),
-                          //         ),
-                          //       );
-                          //     }),
-                          //     const SizedBox(width: 8),
-                          //     _buildGlassCartIcon(widget.onCartTap),
-                          //     // এটি ঠিক আছে কারণ widget. আগেই ছিল
-                          //   ],
-                          // ),
                           Row(
                             children: [
                               _buildGlassCircleIcon(Icons.search_rounded, () {
@@ -267,6 +258,46 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+      floatingActionButton: _showBackToTopButton
+          ? TweenAnimationBuilder(
+              tween: Tween<double>(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 500),
+              builder: (context, double value, child) {
+                return Transform.scale(
+                  scale: value, // আসার সময় বড় হয়ে আসবে
+                  child: child,
+                );
+              },
+              child: FloatingActionButton(
+                onPressed: _scrollToTop,
+                backgroundColor: AppColors.primary,
+                mini: true,
+                // বাটনটির ভেতরে একটি ছোট লুপ এনিমেশন (Optional)
+                child: StreamBuilder(
+                  stream: Stream.periodic(
+                    const Duration(seconds: 3),
+                  ), // প্রতি ৩ সেকেন্ড পরপর এনিমেট হবে
+                  builder: (context, snapshot) {
+                    return TweenAnimationBuilder(
+                      tween: Tween<double>(
+                        begin: 1.0,
+                        end: 1.2,
+                      ), // হালকা বড় হবে
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.elasticOut,
+                      builder: (context, double val, child) {
+                        return Transform.scale(scale: val, child: child);
+                      },
+                      child: const Icon(
+                        Icons.arrow_upward,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            )
+          : null,
       body: CustomScrollView(
         controller: _mainScrollController,
         slivers: [
@@ -344,24 +375,32 @@ class _HomeScreenState extends State<HomeScreen> {
           // ৪. প্রোডাক্ট টাইটেল
           SliverToBoxAdapter(child: sectionTitle("Featured Products")),
 
-          // ৫. ডাইনামিক প্রোডাক্ট গ্রিড
           SliverPadding(
-            padding: const EdgeInsets.all(0),
-            sliver: SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 80),
-              sliver: SliverGrid(
-                // এখানে পরিবর্তন করা হয়েছে
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent:
-                      dynamicMaxExtent, // একটি কার্ড সর্বোচ্চ ১৮০ পিক্সেল চওড়া হবে
-                  childAspectRatio: 0.70, // কার্ডের সাইজ রেশিও
-                  crossAxisSpacing: 6, // পাশাপাশি গ্যাপ
-                  mainAxisSpacing: 6, // ওপর-নিচ গ্যাপ
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => ProductCard(product: _allProducts[index]),
-                  childCount: _allProducts.length,
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 80),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: dynamicMaxExtent,
+                mainAxisExtent: screenWidth > 600 ? 280 : 250,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  if (index == _allProducts.length && _hasMore) {
+                    // আমাদের নতুন কাস্টম উইজেট ব্যবহার করছি
+                    return LoadMoreCard(
+                      title: "View More", // আপনার কাস্টম হেড
+                      subtitle: "New Arrivals", // আপনার কাস্টম ডিটেইলস
+                      isLoading: _isLoading,
+                      onTap: _loadMoreProducts,
+                      primaryColor: AppColors.primary,
+                    );
+                  }
+                  return ProductCard(product: _allProducts[index]);
+                },
+                childCount: _hasMore
+                    ? _allProducts.length + 1
+                    : _allProducts.length,
               ),
             ),
           ),
@@ -374,7 +413,44 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(child: CircularProgressIndicator()),
               ),
             ),
+          /*           SliverToBoxAdapter(child: sectionTitle("Recommended for You")),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 240, // আপনার কার্ডের সাইজ অনুযায়ী অ্যাডজাস্ট করুন
+              child: FutureBuilder<List<Product>>(
+                // এখানে আমরা currentProductId পাস করছি
+                future: ApiService().fetchRecommendations(currentProductId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    // যদি রিকমেন্ডেশন না পায় তবে একটি মেসেজ বা খালি জায়গা দেখাবে
+                    return const Center(child: Text("No recommendations yet"));
+                  }
+
+                  final recommendedProducts = snapshot.data!;
+
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: recommendedProducts.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        width: 160,
+                        margin: const EdgeInsets.only(right: 12, bottom: 10),
+                        child: ProductCard(product: recommendedProducts[index]),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+ */
           // ৭. ফ্ল্যাশ সেল, ভেন্ডর এবং ফুটার সেকশন
           SliverToBoxAdapter(
             child: Column(
@@ -418,7 +494,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                CommonShimmer(width: 300, height: 100, borderRadius: 12),
                 sectionTitle("Why Choose Us"),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
@@ -439,30 +514,72 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  color: AppColors.primary,
-                  child: const Column(
-                    children: [
-                      Text(
-                        "© 2026 AIH Company",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "Secure | Trusted | Fast",
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
+                const Footer(),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // আইকনের জন্য আলাদা এনিমেটেড মেথড (এটি কার্ডের সৌন্দর্য বাড়াবে)
+  Widget _buildAnimatedIcon() {
+    return StreamBuilder(
+      stream: Stream.periodic(const Duration(seconds: 2)),
+      builder: (context, snapshot) {
+        return TweenAnimationBuilder(
+          tween: Tween<double>(begin: 1.0, end: 1.15),
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.easeInOutSine,
+          builder: (context, double val, child) {
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // বাহিরের হালকা রিং
+                Container(
+                  width: 60 * val,
+                  height: 60 * val,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.2 / val),
+                      width: 2,
+                    ),
+                  ),
+                ),
+                // মেইন আইকন কন্টেইনার
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.primary.withOpacity(0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -491,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTopProductsGrid(int vendorId) {
+  /*   Widget _buildTopProductsGrid(int vendorId) {
     return FutureBuilder<List<Product>>(
       future: ApiService().fetchVendorProducts(vendorId, limit: 5),
       // ৫টি প্রোডাক্ট রিকোয়েস্ট করুন
@@ -564,6 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+ */
 }
 
 //seller full profile
