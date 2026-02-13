@@ -8,11 +8,11 @@ import '../models/model.dart';
 
 class ApiService {
   // comment for server test
-  // static const String baseUrl =
-  //     "https://aihcompany.threestarambulance.com/bastobshop";
-
   static const String baseUrl =
-      "https://cabbagy-linsey-presophomore.ngrok-free.dev";
+      "https://aihcompany.threestarambulance.com/bastobshop";
+
+  // static const String baseUrl =
+  //     "https://cabbagy-linsey-presophomore.ngrok-free.dev";
 
   static const String _categoryCacheKey = 'cached_categories_v2';
   static const String _lastFetchKey = 'last_category_fetch_v2';
@@ -40,7 +40,7 @@ class ApiService {
     try {
       final response = await http
           .get(
-            Uri.parse("$baseUrl/get_products?last_id=$lastId"),
+            Uri.parse("https://cabbagy-linsey-presophomore.ngrok-free.dev/get_products?last_id=$lastId"),
             headers: {
               "Accept": "application/json",
               "Connection":
