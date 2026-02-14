@@ -45,6 +45,7 @@ class ApiService {
               "Accept": "application/json",
               "Connection":
                   "keep-alive", // ১০ লাখ ইউজারের জন্য কানেকশন রিইউজ করা জরুরি
+                  "ngrok-skip-browser-warning": "true",
             },
           )
           .timeout(const Duration(seconds: 10));
